@@ -211,8 +211,27 @@ double hit_sphere(const vec3& center, double radius, const ray& r)
 	}
 }
 
-color ray_color(const ray& r, const vector<shared_ptr<Hittable>>& world)
+vec3 random_in_unit_sphere()
 {
+	while (true) {
+		vec3 p{
+			rand() / (RAND_MAX + 1.0) * 2 - 1,
+			rand() / (RAND_MAX + 1.0) * 2 - 1,
+			rand() / (RAND_MAX + 1.0) * 2 - 1
+		};
+		if (p.dot(p) < 1.0)
+		{
+			return p;
+		}
+	}
+}
+
+
+
+color ray_color(const ray& r, const vector<shared_ptr<Hittable>>& world, int depth)
+{
+	if (depth <= 0) return color(0, 0, 0);
+
 	HitRecord rec;
 	bool hit_anything = false;
 	double closest = 1e9;
@@ -228,7 +247,10 @@ color ray_color(const ray& r, const vector<shared_ptr<Hittable>>& world)
 	}
 	if (hit_anything)
 	{
-		return 0.5 * color(rec.normal.x() + 1, rec.normal.y() + 1, rec.normal.z() + 1);
+		vec3 target = rec.point + rec.normal + random_in_unit_sphere();
+		ray reflected(rec.point, target - rec.point);
+		return 0.5 * ray_color(reflected, world, depth - 1);
+
 	}
 	vec3 unit_direction = r.direction.normalize();
 	double t = 0.5 * (unit_direction.y() + 1.0);
@@ -242,37 +264,39 @@ color ray_color(const ray& r, const vector<shared_ptr<Hittable>>& world)
 }
 
 
+
 int main()
 {
 	vector<shared_ptr<Hittable>> world;
 	world.push_back(make_shared<Sphere>(vec3(0, 0, -1), 0.5));      // маленькая сфера
 	world.push_back(make_shared<Sphere>(vec3(0, -100.5, -1), 100)); // большая сфера-пол
 
-	int width = 400;
-	int height = 200;
-	ofstream file("version5.ppm");
+	int width = 1920;
+	int height = 1080;
+	ofstream file("final1.ppm");
 
 	file << "P3\n" << width << ' ' << height << "\n255\n";
 
-	for (int i = 0; i < height; i++)
+	int samples = 10;
+	color col(0, 0, 0);
+	for (int i = height - 1; i >= 0; --i)
 	{
-		for (int j = 0; j < width; j++)
+		for (int j = 0; j < width; ++j)
 		{
-			auto u = double(j) / (width - 1);
-			auto v = double(i) / (height - 1);
-			ray r = camera().get_ray(u, v);
-
-			vec3 color = ray_color(r,world);
-
-			int ir = int(255.999 * color.x());
-			int ig = int(255.999 * color.y());
-			int ib = int(255.999 * color.z());
-
+			color col(0, 0, 0);
+			for (int s = 0; s < samples; ++s)
+			{
+				auto u = (j + rand() / (RAND_MAX + 1.0)) / (width - 1);
+				auto v = (i + rand() / (RAND_MAX + 1.0)) / (height - 1);
+				ray r = camera().get_ray(u, v);
+				col = col + ray_color(r, world, 50);
+			}
+			col = col / samples;
+			int ir = int(255.999 * col.x());
+			int ig = int(255.999 * col.y());
+			int ib = int(255.999 * col.z());
 			file << ir << ' ' << ig << ' ' << ib << '\n';
-
 		}
-
-
 	}
 
 	file.close();
