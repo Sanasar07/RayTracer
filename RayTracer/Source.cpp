@@ -254,12 +254,6 @@ color ray_color(const ray& r, const vector<shared_ptr<Hittable>>& world, int dep
 	}
 	vec3 unit_direction = r.direction.normalize();
 	double t = 0.5 * (unit_direction.y() + 1.0);
-	if (t > 0)
-	{
-		vec3 normal = (r.at(t) - vec3(0, 0, -1)).normalize();
-		return 0.5 * color(normal.x() + 1, normal.y() + 1, normal.z() + 1);
-
-	} // Красный цвет для сферы;
 	return (1.0 - t) * color(1, 1, 1) + t * color(0.5, 0.7, 1.0); // Градиент от белого к голубому
 }
 
@@ -271,9 +265,9 @@ int main()
 	world.push_back(make_shared<Sphere>(vec3(0, 0, -1), 0.5));      // маленькая сфера
 	world.push_back(make_shared<Sphere>(vec3(0, -100.5, -1), 100)); // большая сфера-пол
 
-	int width = 1920;
-	int height = 1080;
-	ofstream file("final1.ppm");
+	int width = 500;
+	int height = 400;
+	ofstream file("final4.ppm");
 
 	file << "P3\n" << width << ' ' << height << "\n255\n";
 
